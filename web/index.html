@@ -1,73 +1,53 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>File Transfer</title>
-  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
-  <style>
-    :root {
-      font-family: Arial, sans-serif;
-      color: #1f2937;
-      background: #f3f4f6;
-    }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>File Transfer</title>
 
-    body {
-      margin: 0;
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-    }
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
 
-    .card {
-      width: min(420px, calc(100% - 32px));
-      background: #ffffff;
-      padding: 24px;
-      border-radius: 16px;
-      box-shadow: 0 12px 40px rgba(15, 23, 42, 0.12);
-    }
+  <body class="bg-gray-100 min-h-screen flex items-center justify-center">
+    <div class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md">
+      <h1 class="text-xl font-bold mb-4 text-center">Send File</h1>
 
-    h1 {
-      margin-top: 0;
-    }
+      <!-- Drag & Drop Zone -->
+      <div
+        id="dropzone"
+        class="border-2 border-dashed border-gray-300 p-6 text-center rounded-xl cursor-pointer hover:border-teal-500 transition"
+      >
+        <p class="text-gray-500">Drag & drop file here or click to select</p>
+        <input type="file" id="fileInput" name="file" class="hidden" />
+      </div>
 
-    form {
-      display: grid;
-      gap: 12px;
-    }
+      <!-- Upload button -->
+      <button
+        id="uploadBtn"
+        class="mt-4 w-full bg-teal-600 text-white py-2 rounded-lg hover:bg-teal-700 transition"
+      >
+        Upload
+      </button>
 
-    button {
-      border: 0;
-      border-radius: 10px;
-      padding: 12px 16px;
-      background: #0f766e;
-      color: #fff;
-      cursor: pointer;
-      font-size: 16px;
-    }
+      <!-- Progress -->
+      <div class="mt-4 hidden" id="progressContainer">
+        <div class="w-full bg-gray-200 rounded-full h-3">
+          <div id="progressBar" class="bg-teal-600 h-3 rounded-full w-0"></div>
+        </div>
+        <p class="text-sm text-gray-500 mt-1" id="progressText">0%</p>
+      </div>
 
-    #result {
-      margin-top: 16px;
-      line-height: 1.5;
-    }
-  </style>
-</head>
-<body>
-  <main class="card">
-    <h1>Upload File</h1>
-    <form
-      action="/upload"
-      method="post"
-      hx-post="/upload"
-      hx-encoding="multipart/form-data"
-      hx-target="#result"
-      hx-swap="innerHTML"
-      enctype="multipart/form-data"
-    >
-      <input type="file" name="file" required />
-      <button type="submit">Upload</button>
-    </form>
-    <div id="result"></div>
-  </main>
-</body>
+      <!-- Spinner -->
+      <div id="spinner" class="hidden mt-4 text-center">
+        <div
+          class="animate-spin rounded-full h-8 w-8 border-4 border-teal-500 border-t-transparent mx-auto"
+        ></div>
+      </div>
+
+      <!-- Result -->
+      <div id="result" class="mt-4 text-sm text-gray-700 text-center"></div>
+    </div>
+  </body>
+  <script src="/js/app.js"></script>
 </html>
