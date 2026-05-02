@@ -6,17 +6,23 @@ import (
 	"net/http"
 	"os"
 	"time"
+
+	"fileTransfer/internal/store"
+	"fileTransfer/internal/utils"
 )
 
 func UploadHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+
+	// limit size
+	err := r.ParseMultipartForm(10 << 20)
+	if err != nil {
+		http.Error(w, "File too large (max 10MB)", 400)
 		return
 	}
 
 	file, header, err := r.FormFile("file")
 	if err != nil {
-		http.Error(w, "Failed to read file from request", http.StatusBadRequest)
+		http.Error(w, "Invalid file", 400)
 		return
 	}
 	defer file.Close()
@@ -24,22 +30,25 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	id := fmt.Sprintf("%d", time.Now().UnixNano())
 	path := "uploads/" + id + "_" + header.Filename
 
-	if err := os.MkdirAll("uploads", 0o755); err != nil {
-		http.Error(w, "Failed to create upload directory", http.StatusInternalServerError)
-		return
-	}
-
 	dst, err := os.Create(path)
 	if err != nil {
-		http.Error(w, "Failed to create file on server", http.StatusInternalServerError)
+		http.Error(w, "Cannot save file", 500)
 		return
 	}
 	defer dst.Close()
 
-	if _, err := io.Copy(dst, file); err != nil {
-		http.Error(w, "Failed to save file", http.StatusInternalServerError)
+	io.Copy(dst, file)
+
+	// generate code
+	code := utils.GenerateCode()
+
+	// save to Redis
+	rs := store.NewRedisStore()
+	err = rs.Save(code, path)
+	if err != nil {
+		http.Error(w, "Redis error", 500)
 		return
 	}
 
-	fmt.Fprintf(w, "Uploaded! <br>Download: <a href='/download/%s'>Link</a>", id)
+	fmt.Fprintf(w, "Your code: <b>%s</b>", code)
 }
