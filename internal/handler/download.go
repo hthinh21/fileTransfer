@@ -1,30 +1,46 @@
 package handler
 
 import (
+	"context"
+	"io"
 	"net/http"
-	"os"
-	"strings"
+	"strconv"
+
+	"fileTransfer/internal/storage"
+	"fileTransfer/internal/store"
 )
 
 func DownloadHandler(w http.ResponseWriter, r *http.Request) {
-	id := strings.TrimPrefix(r.URL.Path, "/download/")
-	if id == "" {
-		http.Error(w, "File ID is required", http.StatusBadRequest)
+	code := r.URL.Query().Get("code")
+	if code == "" {
+		http.Error(w, "Code is required", http.StatusBadRequest)
 		return
 	}
 
-	files, err := os.ReadDir("uploads")
+	rs := store.NewRedisStore()
+	meta, err := rs.Get(code)
 	if err != nil {
-		http.Error(w, "Upload directory not found", http.StatusNotFound)
+		http.Error(w, "Invalid or expired code", http.StatusNotFound)
 		return
 	}
 
-	for _, file := range files {
-		if strings.HasPrefix(file.Name(), id) {
-			http.ServeFile(w, r, "uploads/"+file.Name())
-			return
-		}
+	reader, contentType, contentLength, err := storage.DownloadFile(context.Background(), meta.ObjectKey)
+	if err != nil {
+		http.Error(w, "Cannot download file", http.StatusInternalServerError)
+		return
+	}
+	defer reader.Close()
+
+	_ = rs.Delete(code)
+
+	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("Content-Disposition", `attachment; filename="`+meta.FileName+`"`)
+	if contentLength > 0 {
+		w.Header().Set("Content-Length", strconv.FormatInt(contentLength, 10))
 	}
 
-	http.Error(w, "File not found", http.StatusNotFound)
+	if _, err := io.Copy(w, reader); err != nil {
+		http.Error(w, "Cannot stream file", http.StatusInternalServerError)
+		return
+	}
 }

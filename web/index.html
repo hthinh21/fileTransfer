@@ -11,6 +11,7 @@
 
   <body class="bg-gray-100 min-h-screen flex items-center justify-center">
     <div class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md">
+
       <h1 class="text-xl font-bold mb-4 text-center">Send File</h1>
 
       <!-- Drag & Drop Zone -->
@@ -18,7 +19,9 @@
         id="dropzone"
         class="border-2 border-dashed border-gray-300 p-6 text-center rounded-xl cursor-pointer hover:border-teal-500 transition"
       >
-        <p class="text-gray-500">Drag & drop file here or click to select</p>
+        <p id="fileLabel" class="text-gray-500">
+          Drag & drop file here or click to select
+        </p>
         <input type="file" id="fileInput" name="file" class="hidden" />
       </div>
 
@@ -35,7 +38,7 @@
         <div class="w-full bg-gray-200 rounded-full h-3">
           <div id="progressBar" class="bg-teal-600 h-3 rounded-full w-0"></div>
         </div>
-        <p class="text-sm text-gray-500 mt-1" id="progressText">0%</p>
+        <p class="text-sm text-gray-500 mt-1 text-center" id="progressText">0%</p>
       </div>
 
       <!-- Spinner -->
@@ -47,7 +50,27 @@
 
       <!-- Result -->
       <div id="result" class="mt-4 text-sm text-gray-700 text-center"></div>
+
+      <!-- Receive section -->
+      <hr class="my-6" />
+
+      <h2 class="text-lg font-semibold text-center">Receive File</h2>
+
+      <input
+        id="codeInput"
+        placeholder="Enter 6-digit code"
+        class="mt-3 w-full border p-2 rounded-lg text-center"
+      />
+
+      <button
+        id="downloadBtn"
+        class="mt-3 w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition"
+      >
+        Download
+      </button>
+
     </div>
+
+    <script src="/js/app.js"></script>
   </body>
-  <script src="/js/app.js"></script>
 </html>

@@ -1,12 +1,14 @@
 package handler
 
 import (
+	"context"
 	"fmt"
-	"io"
+	"log"
 	"net/http"
-	"os"
+	"path/filepath"
 	"time"
 
+	"fileTransfer/internal/storage"
 	"fileTransfer/internal/store"
 	"fileTransfer/internal/utils"
 )
@@ -16,37 +18,42 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	// limit size
 	err := r.ParseMultipartForm(10 << 20)
 	if err != nil {
-		http.Error(w, "File too large (max 10MB)", 400)
+		http.Error(w, "File too large (max 10MB)", http.StatusBadRequest)
 		return
 	}
 
 	file, header, err := r.FormFile("file")
 	if err != nil {
-		http.Error(w, "Invalid file", 400)
+		http.Error(w, "Invalid file", http.StatusBadRequest)
 		return
 	}
 	defer file.Close()
 
 	id := fmt.Sprintf("%d", time.Now().UnixNano())
-	path := "uploads/" + id + "_" + header.Filename
+	objectKey := filepath.ToSlash(filepath.Join("uploads", id+"_"+header.Filename))
 
-	dst, err := os.Create(path)
+	contentType := header.Header.Get("Content-Type")
+	if contentType == "" {
+		contentType = "application/octet-stream"
+	}
+
+	err = storage.UploadFile(context.Background(), objectKey, file, contentType)
 	if err != nil {
-		http.Error(w, "Cannot save file", 500)
+		log.Printf("upload to R2 failed: key=%s file=%s err=%v", objectKey, header.Filename, err)
+		http.Error(w, fmt.Sprintf("Cannot upload file: %v", err), http.StatusInternalServerError)
 		return
 	}
-	defer dst.Close()
 
-	io.Copy(dst, file)
-
-	// generate code
 	code := utils.GenerateCode()
 
-	// save to Redis
 	rs := store.NewRedisStore()
-	err = rs.Save(code, path)
+	err = rs.Save(code, store.FileMeta{
+		ObjectKey: objectKey,
+		FileName:  header.Filename,
+	})
 	if err != nil {
-		http.Error(w, "Redis error", 500)
+		log.Printf("save upload code failed: code=%s key=%s err=%v", code, objectKey, err)
+		http.Error(w, fmt.Sprintf("Redis error: %v", err), http.StatusInternalServerError)
 		return
 	}
 
