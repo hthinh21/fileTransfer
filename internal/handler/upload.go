@@ -2,60 +2,68 @@ package handler
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
 	"log"
 	"net/http"
 	"path/filepath"
-	"time"
 
+	"github.com/google/uuid"
+
+	"fileTransfer/internal/sharecode"
 	"fileTransfer/internal/storage"
-	"fileTransfer/internal/store"
-	"fileTransfer/internal/utils"
 )
 
-func UploadHandler(w http.ResponseWriter, r *http.Request) {
+type UploadHandler struct {
+    store *storage.RedisStore
+}
 
-	// limit size
-	err := r.ParseMultipartForm(10 << 20)
-	if err != nil {
-		http.Error(w, "File too large (max 10MB)", http.StatusBadRequest)
-		return
-	}
+func NewUploadHandler(store *storage.RedisStore) *UploadHandler {
+    return &UploadHandler{store: store}
+}
 
-	file, header, err := r.FormFile("file")
-	if err != nil {
-		http.Error(w, "Invalid file", http.StatusBadRequest)
-		return
-	}
-	defer file.Close()
+func (h *UploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodPost {
+        http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+        return
+    }
 
-	id := fmt.Sprintf("%d", time.Now().UnixNano())
-	objectKey := filepath.ToSlash(filepath.Join("uploads", id+"_"+header.Filename))
+    if err := r.ParseMultipartForm(10 << 20); err != nil {
+        http.Error(w, "File too large (max 10MB)", http.StatusBadRequest)
+        return
+    }
 
-	contentType := header.Header.Get("Content-Type")
-	if contentType == "" {
-		contentType = "application/octet-stream"
-	}
+    file, header, err := r.FormFile("file")
+    if err != nil {
+        http.Error(w, "Invalid file", http.StatusBadRequest)
+        return
+    }
+    defer file.Close()
 
-	err = storage.UploadFile(context.Background(), objectKey, file, contentType)
-	if err != nil {
-		log.Printf("upload to R2 failed: key=%s file=%s err=%v", objectKey, header.Filename, err)
-		http.Error(w, fmt.Sprintf("Cannot upload file: %v", err), http.StatusInternalServerError)
-		return
-	}
+    id := uuid.New().String()
+    objectKey := filepath.ToSlash(filepath.Join("uploads", id+"_"+header.Filename))
 
-	code := utils.GenerateCode()
+    contentType := header.Header.Get("Content-Type")
+    if contentType == "" {
+        contentType = "application/octet-stream"
+    }
 
-	rs := store.NewRedisStore()
-	err = rs.Save(code, store.FileMeta{
-		ObjectKey: objectKey,
-		FileName:  header.Filename,
-	})
-	if err != nil {
-		log.Printf("save upload code failed: code=%s key=%s err=%v", code, objectKey, err)
-		http.Error(w, fmt.Sprintf("Redis error: %v", err), http.StatusInternalServerError)
-		return
-	}
+    if err = storage.UploadFile(context.Background(), objectKey, file, contentType); err != nil {
+        log.Printf("upload to R2 failed: key=%s file=%s err=%v", objectKey, header.Filename, err)
+        http.Error(w, "Upload failed, please try again", http.StatusInternalServerError)
+        return
+    }
 
-	fmt.Fprintf(w, "Your code: <b>%s</b>", code)
+    code := sharecode.Generate()
+
+    if err = h.store.Save(code, storage.FileMeta{
+        ObjectKey: objectKey,
+        FileName:  header.Filename,
+    }); err != nil {
+        log.Printf("save code failed: code=%s key=%s err=%v", code, objectKey, err)
+        http.Error(w, "Upload failed, please try again", http.StatusInternalServerError)
+        return
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(map[string]string{"code": code})
 }

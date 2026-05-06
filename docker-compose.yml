@@ -1,0 +1,20 @@
+version: "3.9"
+
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    depends_on:
+      - redis
+    environment:
+      - REDIS_ADDR=redis:6379
+      - R2_ENDPOINT=${R2_ENDPOINT}
+      - R2_ACCESS_KEY=${R2_ACCESS_KEY}
+      - R2_SECRET_KEY=${R2_SECRET_KEY}
+      - R2_BUCKET=${R2_BUCKET}
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"

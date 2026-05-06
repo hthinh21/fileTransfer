@@ -1,10 +1,11 @@
-package store
+package storage
 
 import (
 	"context"
 	"encoding/json"
 	"time"
-
+	"os"
+	"fmt"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -18,14 +19,21 @@ type RedisStore struct {
 	ctx    context.Context
 }
 
-func NewRedisStore() *RedisStore {
-	client := redis.NewClient(&redis.Options{
-		Addr: "localhost:6379",
-	})
-	return &RedisStore{
-		client: client,
-		ctx:    context.Background(),
-	}
+func NewRedisStore() (*RedisStore, error) {
+    addr := os.Getenv("REDIS_ADDR")
+    if addr == "" {
+        addr = "localhost:6379"
+    }
+    client := redis.NewClient(&redis.Options{Addr: addr})
+
+    if err := client.Ping(context.Background()).Err(); err != nil {
+        return nil, fmt.Errorf("redis connect failed: %w", err)
+    }
+
+    return &RedisStore{
+        client: client,
+        ctx:    context.Background(),
+    }, nil
 }
 
 func (r *RedisStore) Save(code string, meta FileMeta) error {
