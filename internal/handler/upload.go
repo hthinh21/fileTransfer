@@ -14,56 +14,56 @@ import (
 )
 
 type UploadHandler struct {
-    store *storage.RedisStore
+	store *storage.RedisStore
 }
 
 func NewUploadHandler(store *storage.RedisStore) *UploadHandler {
-    return &UploadHandler{store: store}
+	return &UploadHandler{store: store}
 }
 
 func (h *UploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-    if r.Method != http.MethodPost {
-        http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-        return
-    }
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
 
-    if err := r.ParseMultipartForm(10 << 20); err != nil {
-        http.Error(w, "File too large (max 10MB)", http.StatusBadRequest)
-        return
-    }
+	if err := r.ParseMultipartForm(10 << 20); err != nil {
+		http.Error(w, "File too large (max 10MB)", http.StatusBadRequest)
+		return
+	}
 
-    file, header, err := r.FormFile("file")
-    if err != nil {
-        http.Error(w, "Invalid file", http.StatusBadRequest)
-        return
-    }
-    defer file.Close()
+	file, header, err := r.FormFile("file")
+	if err != nil {
+		http.Error(w, "Invalid file", http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
 
-    id := uuid.New().String()
-    objectKey := filepath.ToSlash(filepath.Join("uploads", id+"_"+header.Filename))
+	id := uuid.New().String()
+	objectKey := filepath.ToSlash(filepath.Join("uploads", id+"_"+header.Filename))
 
-    contentType := header.Header.Get("Content-Type")
-    if contentType == "" {
-        contentType = "application/octet-stream"
-    }
+	contentType := header.Header.Get("Content-Type")
+	if contentType == "" {
+		contentType = "application/octet-stream"
+	}
 
-    if err = storage.UploadFile(context.Background(), objectKey, file, contentType); err != nil {
-        log.Printf("upload to R2 failed: key=%s file=%s err=%v", objectKey, header.Filename, err)
-        http.Error(w, "Upload failed, please try again", http.StatusInternalServerError)
-        return
-    }
+	if err = storage.UploadFile(context.Background(), objectKey, file, contentType); err != nil {
+		log.Printf("upload to R2 failed: key=%s file=%s err=%v", objectKey, header.Filename, err)
+		http.Error(w, "Upload failed, please try again", http.StatusInternalServerError)
+		return
+	}
 
-    code := sharecode.Generate()
+	code := sharecode.Generate()
 
-    if err = h.store.Save(code, storage.FileMeta{
-        ObjectKey: objectKey,
-        FileName:  header.Filename,
-    }); err != nil {
-        log.Printf("save code failed: code=%s key=%s err=%v", code, objectKey, err)
-        http.Error(w, "Upload failed, please try again", http.StatusInternalServerError)
-        return
-    }
+	if err = h.store.Save(code, storage.FileMeta{
+		ObjectKey: objectKey,
+		FileName:  header.Filename,
+	}); err != nil {
+		log.Printf("save code failed: code=%s key=%s err=%v", code, objectKey, err)
+		http.Error(w, "Upload failed, please try again", http.StatusInternalServerError)
+		return
+	}
 
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(map[string]string{"code": code})
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"code": code})
 }

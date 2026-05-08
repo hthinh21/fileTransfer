@@ -92,12 +92,12 @@ uploadBtn.addEventListener("click", () => {
     uploadBtn.disabled = false;
 
     if (xhr.status === 200) {
-      result.innerHTML = xhr.responseText;
+      try {
+        const data = JSON.parse(xhr.responseText);
+        result.innerHTML = `File uploaded successfully! Code: <strong>${data.code}</strong>`;
 
-      // extract 6-digit code
-      const match = xhr.responseText.match(/\d{6}/);
-      if (match) {
-        codeInput.value = match[0];
+      } catch (e) {
+        result.innerHTML = xhr.responseText;
       }
 
       // reset progress
