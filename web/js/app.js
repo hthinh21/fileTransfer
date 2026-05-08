@@ -15,9 +15,8 @@ const codeInput = document.getElementById("codeInput");
 
 let selectedFile = null;
 
-//
-// 📁 SELECT FILE
-//
+// SELECT FILE
+
 dropzone.addEventListener("click", () => fileInput.click());
 
 fileInput.addEventListener("change", (e) => {
@@ -28,9 +27,8 @@ fileInput.addEventListener("change", (e) => {
   }
 });
 
-//
-// 🧲 DRAG & DROP
-//
+// DRAG & DROP
+
 dropzone.addEventListener("dragover", (e) => {
   e.preventDefault();
   dropzone.classList.add("border-teal-500");
@@ -51,16 +49,15 @@ dropzone.addEventListener("drop", (e) => {
   }
 });
 
-//
-// 🚀 UPLOAD
-//
+// UPLOAD
+
 uploadBtn.addEventListener("click", () => {
   if (!selectedFile) {
     alert("Please select a file");
     return;
   }
 
-  // 🔒 limit 10MB (frontend)
+  // limit 10MB (frontend)
   if (selectedFile.size > 10 * 1024 * 1024) {
     alert("File too large (max 10MB)");
     return;
@@ -78,9 +75,8 @@ uploadBtn.addEventListener("click", () => {
   uploadBtn.disabled = true;
   result.innerHTML = "";
 
-  //
-  // 📊 PROGRESS
-  //
+  // PROGRESS
+
   xhr.upload.onprogress = (e) => {
     if (e.lengthComputable) {
       const percent = Math.round((e.loaded / e.total) * 100);
@@ -89,9 +85,8 @@ uploadBtn.addEventListener("click", () => {
     }
   };
 
-  //
-  // ✅ DONE
-  //
+  // DONE
+
   xhr.onload = () => {
     spinner.classList.add("hidden");
     uploadBtn.disabled = false;
@@ -99,7 +94,7 @@ uploadBtn.addEventListener("click", () => {
     if (xhr.status === 200) {
       result.innerHTML = xhr.responseText;
 
-      // 🔥 extract 6-digit code
+      // extract 6-digit code
       const match = xhr.responseText.match(/\d{6}/);
       if (match) {
         codeInput.value = match[0];
@@ -123,9 +118,8 @@ uploadBtn.addEventListener("click", () => {
   xhr.send(formData);
 });
 
-//
-// 📥 DOWNLOAD
-//
+// DOWNLOAD
+
 if (downloadBtn) {
   downloadBtn.addEventListener("click", () => {
     const code = codeInput.value;
