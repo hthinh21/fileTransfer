@@ -11,9 +11,7 @@ import (
 )
 
 func main() {
-    if err := godotenv.Load(); err != nil {
-        log.Println("No .env file found")
-    }
+    _ = godotenv.Load()
 
     if err := storage.InitR2(); err != nil {
         log.Fatalf("R2 init failed: %v", err)
