@@ -13,51 +13,57 @@
     <div class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md">
       <h1 class="text-xl font-bold mb-4 text-center">Send File</h1>
 
-      <!-- Drag & Drop Zone -->
-      <div
-        id="dropzone"
-        class="border-2 border-dashed border-gray-300 p-6 text-center rounded-xl cursor-pointer hover:border-teal-500 transition"
-      >
-        <p id="fileLabel" class="text-gray-500">
-          Drag & drop file here or click to select
-        </p>
-        <input type="file" id="fileInput" name="file" class="hidden" />
-      </div>
-
-      <!-- Upload button -->
-      <button
-        id="uploadBtn"
-        class="mt-4 w-full bg-teal-600 text-white py-2 rounded-lg hover:bg-teal-700 transition"
-      >
-        Upload
-      </button>
-
-      <!-- Progress -->
-      <div class="mt-4 hidden" id="progressContainer">
-        <div class="w-full bg-gray-200 rounded-full h-3">
-          <div id="progressBar" class="bg-teal-600 h-3 rounded-full w-0"></div>
-        </div>
-        <p class="text-sm text-gray-500 mt-1 text-center" id="progressText">
-          0%
-        </p>
-      </div>
-
-      <!-- Spinner -->
-      <div id="spinner" class="hidden mt-4 text-center">
+      <!-- Upload section — ẩn sau khi upload xong -->
+      <div id="uploadSection">
+        <!-- Drag & Drop Zone -->
         <div
-          class="animate-spin rounded-full h-8 w-8 border-4 border-teal-500 border-t-transparent mx-auto"
-        ></div>
+          id="dropzone"
+          class="border-2 border-dashed border-gray-300 p-6 text-center rounded-xl cursor-pointer hover:border-teal-500 transition"
+        >
+          <p id="fileLabel" class="text-gray-500">
+            Drag & drop file here or click to select
+          </p>
+          <input type="file" id="fileInput" name="file" class="hidden" />
+        </div>
+
+        <!-- Upload button -->
+        <button
+          id="uploadBtn"
+          class="mt-4 w-full bg-teal-600 text-white py-2 rounded-lg hover:bg-teal-700 transition"
+        >
+          Upload
+        </button>
+
+        <!-- Progress -->
+        <div class="mt-4 hidden" id="progressContainer">
+          <div class="w-full bg-gray-200 rounded-full h-3">
+            <div id="progressBar" class="bg-teal-600 h-3 rounded-full w-0"></div>
+          </div>
+          <p class="text-sm text-gray-500 mt-1 text-center" id="progressText">
+            0%
+          </p>
+        </div>
+
+        <!-- Spinner -->
+        <div id="spinner" class="hidden mt-4 text-center">
+          <div
+            class="animate-spin rounded-full h-8 w-8 border-4 border-teal-500 border-t-transparent mx-auto"
+          ></div>
+        </div>
       </div>
 
-      <!-- Result -->
-      <div id="result" class="mt-4 text-sm text-gray-700 text-center"></div>
+      <!-- Result — hiện sau khi upload xong -->
+      <div id="resultSection" class="hidden text-center">
+        <div id="result" class="mt-4 text-sm text-gray-700"></div>
 
-      <!-- Countdown — ẩn ban đầu, hiện sau khi upload xong -->
-      <div id="countdownContainer" class="hidden mt-3 text-center">
-        <p class="text-sm text-gray-500">
-          Expires in
-          <span id="countdown" class="font-bold text-red-500">10:00</span>
-        </p>
+        <!-- Countdown -->
+        <div id="countdownContainer" class="hidden mt-3">
+          <p class="text-sm text-gray-500">
+            Expires in
+            <span id="countdown" class="font-bold text-red-500">10:00</span>
+          </p>
+        </div>
+
       </div>
 
       <!-- Receive section -->

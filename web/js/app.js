@@ -10,6 +10,9 @@ const progressText = document.getElementById("progressText");
 const spinner = document.getElementById("spinner");
 const result = document.getElementById("result");
 
+const uploadSection = document.getElementById("uploadSection");
+const resultSection = document.getElementById("resultSection");
+
 const downloadBtn = document.getElementById("downloadBtn");
 const codeInput = document.getElementById("codeInput");
 
@@ -99,11 +102,15 @@ uploadBtn.addEventListener("click", () => {
         document.getElementById("countdownContainer").classList.remove("hidden");
         startCountdown(600);
 
+        // ẩn upload, hiện result
+        uploadSection.classList.add("hidden");
+        resultSection.classList.remove("hidden");
+
       } catch (e) {
         result.innerHTML = xhr.responseText;
       }
 
-      // reset & hide progress
+      // reset progress
       progressBar.style.width = "0%";
       progressText.innerText = "0%";
       progressContainer.classList.add("hidden");
@@ -156,5 +163,6 @@ function startCountdown(totalSeconds) {
       result.innerText = "Code has expired.";
     }
   }, 1000);
+
 }
 
