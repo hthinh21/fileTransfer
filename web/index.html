@@ -11,7 +11,6 @@
 
   <body class="bg-gray-100 min-h-screen flex items-center justify-center">
     <div class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md">
-
       <h1 class="text-xl font-bold mb-4 text-center">Send File</h1>
 
       <!-- Drag & Drop Zone -->
@@ -38,7 +37,9 @@
         <div class="w-full bg-gray-200 rounded-full h-3">
           <div id="progressBar" class="bg-teal-600 h-3 rounded-full w-0"></div>
         </div>
-        <p class="text-sm text-gray-500 mt-1 text-center" id="progressText">0%</p>
+        <p class="text-sm text-gray-500 mt-1 text-center" id="progressText">
+          0%
+        </p>
       </div>
 
       <!-- Spinner -->
@@ -50,6 +51,14 @@
 
       <!-- Result -->
       <div id="result" class="mt-4 text-sm text-gray-700 text-center"></div>
+
+      <!-- Countdown — ẩn ban đầu, hiện sau khi upload xong -->
+      <div id="countdownContainer" class="hidden mt-3 text-center">
+        <p class="text-sm text-gray-500">
+          Expires in
+          <span id="countdown" class="font-bold text-red-500">10:00</span>
+        </p>
+      </div>
 
       <!-- Receive section -->
       <hr class="my-6" />
@@ -68,7 +77,6 @@
       >
         Download
       </button>
-
     </div>
 
     <script src="/js/app.js"></script>

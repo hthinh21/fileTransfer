@@ -94,15 +94,19 @@ uploadBtn.addEventListener("click", () => {
     if (xhr.status === 200) {
       try {
         const data = JSON.parse(xhr.responseText);
-        result.innerHTML = `File uploaded successfully! Code: <strong>${data.code}</strong>`;
+
+        result.innerHTML = `Your code: <span class="font-bold text-2xl tracking-widest text-teal-600">${data.code}</span>`;
+        document.getElementById("countdownContainer").classList.remove("hidden");
+        startCountdown(600);
 
       } catch (e) {
         result.innerHTML = xhr.responseText;
       }
 
-      // reset progress
+      // reset & hide progress
       progressBar.style.width = "0%";
       progressText.innerText = "0%";
+      progressContainer.classList.add("hidden");
 
     } else {
       result.innerText = xhr.responseText || `Upload failed (HTTP ${xhr.status})`;
@@ -132,3 +136,25 @@ if (downloadBtn) {
     window.location.href = `/download?code=${code}`;
   });
 }
+
+function startCountdown(totalSeconds) {
+  const countdown = document.getElementById("countdown");
+  const end = Date.now() + totalSeconds * 1000;
+
+  const interval = setInterval(() => {
+    const remaining = Math.max(0, Math.round((end - Date.now()) / 1000));
+
+    const m = Math.floor(remaining / 60).toString().padStart(2, "0");
+    const s = (remaining % 60).toString().padStart(2, "0");
+    countdown.innerText = `${m}:${s}`;
+
+    if (remaining <= 0) {
+      clearInterval(interval);
+      countdown.innerText = "Expired";
+      countdown.classList.remove("text-red-500");
+      countdown.classList.add("text-gray-400");
+      result.innerText = "Code has expired.";
+    }
+  }, 1000);
+}
+

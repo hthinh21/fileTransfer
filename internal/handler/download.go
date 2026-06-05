@@ -51,13 +51,7 @@ func (h *DownloadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     if contentLength > 0 {
         w.Header().Set("Content-Length", strconv.FormatInt(contentLength, 10))
     }
+    io.Copy(w, reader)
 
-    if _, err := io.Copy(w, reader); err != nil {
-        log.Printf("stream file failed: key=%s err=%v", meta.ObjectKey, err)
-        return 
-    }
-
-    if err := h.store.Delete(code); err != nil {
-        log.Printf("delete code failed: code=%s err=%v", code, err)
-    }
+    h.store.Delete(code)
 }
