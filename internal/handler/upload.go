@@ -53,13 +53,28 @@ func (h *UploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	code := sharecode.Generate()
+	var code string
+	for attempt := 0; attempt < 5; attempt++ {
+		candidate := sharecode.Generate()
 
-	if err = h.store.Save(code, storage.FileMeta{
-		ObjectKey: objectKey,
-		FileName:  header.Filename,
-	}); err != nil {
-		log.Printf("save code failed: code=%s key=%s err=%v", code, objectKey, err)
+		ok, err := h.store.SaveIfAbsent(candidate, storage.FileMeta{
+			ObjectKey: objectKey,
+			FileName:  header.Filename,
+		})
+		if err != nil {
+			log.Printf("save code failed: code=%s key=%s err=%v", candidate, objectKey, err)
+			http.Error(w, "Upload failed, please try again", http.StatusInternalServerError)
+			return
+		}
+
+		if ok {
+			code = candidate
+			break
+		}
+	}
+
+	if code == "" {
+		log.Printf("could not generate unique code: key=%s", objectKey)
 		http.Error(w, "Upload failed, please try again", http.StatusInternalServerError)
 		return
 	}

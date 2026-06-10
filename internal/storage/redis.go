@@ -9,9 +9,13 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+const CodeTTL = 10 * time.Minute
+
 type FileMeta struct {
-	ObjectKey string `json:"object_key"`
-	FileName  string `json:"file_name"`
+	ObjectKey    string    `json:"object_key"`
+	FileName     string    `json:"file_name"`
+	Downloaded   bool      `json:"downloaded"`
+	DownloadedAt time.Time `json:"downloaded_at,omitempty"`
 }
 
 type RedisStore struct {
@@ -42,7 +46,16 @@ func (r *RedisStore) Save(code string, meta FileMeta) error {
 		return err
 	}
 
-	return r.client.Set(r.ctx, code, payload, 10*time.Minute).Err()
+	return r.client.Set(r.ctx, code, payload, CodeTTL).Err()
+}
+
+func (r *RedisStore) SaveIfAbsent(code string, meta FileMeta) (bool, error) {
+	payload, err := json.Marshal(meta)
+	if err != nil {
+		return false, err
+	}
+
+	return r.client.SetNX(r.ctx, code, payload, CodeTTL).Result()
 }
 
 func (r *RedisStore) Get(code string) (FileMeta, error) {

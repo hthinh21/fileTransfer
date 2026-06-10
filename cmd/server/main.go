@@ -8,6 +8,7 @@ import (
 
     "fileTransfer/internal/handler"
     "fileTransfer/internal/storage"
+    "fileTransfer/internal/ws"
 )
 
 func main() {
@@ -22,10 +23,13 @@ func main() {
         log.Fatalf("Redis init failed: %v", err)
     }
 
+    hub := ws.NewHub()
+
     mux := http.NewServeMux()
     mux.Handle("/", http.FileServer(http.Dir("./web")))
     mux.Handle("/upload", handler.NewUploadHandler(store))
-    mux.Handle("/download", handler.NewDownloadHandler(store))
+    mux.Handle("/download", handler.NewDownloadHandler(store, hub))
+    mux.Handle("/ws", handler.NewWSHandler(hub))
 
     log.Println("Server running on http://localhost:8080")
     if err := http.ListenAndServe(":8080", mux); err != nil {

@@ -17,6 +17,44 @@ const downloadBtn = document.getElementById("downloadBtn");
 const codeInput = document.getElementById("codeInput");
 
 let selectedFile = null;
+let currentCode = null;
+let countdownInterval = null;
+let notifySocket = null;
+let reconnectAttempts = 0;
+const MAX_RECONNECT_ATTEMPTS = 5;
+
+function connectNotifySocket(code) {
+  if (notifySocket) {
+    notifySocket.onclose = null; // tránh vòng lặp đóng-mở chồng nhau khi tự thay thế kết nối cũ
+    notifySocket.close();
+  }
+
+  const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+  notifySocket = new WebSocket(`${protocol}://${window.location.host}/ws?code=${code}`);
+
+  notifySocket.onopen = () => {
+    reconnectAttempts = 0;
+  };
+
+  notifySocket.onmessage = (event) => {
+    const msg = JSON.parse(event.data);
+    if (msg.event === "downloaded" && code === currentCode) {
+      if (countdownInterval) clearInterval(countdownInterval);
+      document.getElementById("countdownContainer").classList.add("hidden");
+      result.innerHTML = `File đã được tải về.`;
+      currentCode = null;
+    }
+  };
+
+  notifySocket.onclose = () => {
+    // chỉ thử kết nối lại nếu code này vẫn đang còn hiệu lực và chưa vượt quá số lần cho phép
+    if (code !== currentCode || reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) return;
+
+    reconnectAttempts++;
+    const delay = Math.min(1000 * 2 ** reconnectAttempts, 10000);
+    setTimeout(() => connectNotifySocket(code), delay);
+  };
+}
 
 // SELECT FILE
 
@@ -54,15 +92,23 @@ dropzone.addEventListener("drop", (e) => {
 
 // UPLOAD
 
+const uploadError = document.getElementById("uploadError");
+
 uploadBtn.addEventListener("click", () => {
+  uploadError.classList.add("hidden");
+  uploadError.innerText = "";
+
+
   if (!selectedFile) {
-    alert("Please select a file");
+    uploadError.innerText = "Vui lòng chọn file để upload";
+    uploadError.classList.remove("hidden");
     return;
   }
 
   // limit 10MB (frontend)
   if (selectedFile.size > 10 * 1024 * 1024) {
-    alert("File too large (max 10MB)");
+    uploadError.innerText = "File quá lớn (tối đa 10MB)";
+    uploadError.classList.remove("hidden");
     return;
   }
 
@@ -91,6 +137,7 @@ uploadBtn.addEventListener("click", () => {
   // DONE
 
   xhr.onload = () => {
+    uploadError.classList.add("hidden");
     spinner.classList.add("hidden");
     uploadBtn.disabled = false;
 
@@ -98,9 +145,12 @@ uploadBtn.addEventListener("click", () => {
       try {
         const data = JSON.parse(xhr.responseText);
 
-        result.innerHTML = `Your code: <span class="font-bold text-2xl tracking-widest text-teal-600">${data.code}</span>`;
+        currentCode = data.code;
+        connectNotifySocket(data.code);
+
+        result.innerHTML = `Code: <span class="font-bold text-2xl tracking-widest text-teal-600">${data.code}</span>`;
         document.getElementById("countdownContainer").classList.remove("hidden");
-        startCountdown(600);
+        countdownInterval = startCountdown(600);
 
         // ẩn upload, hiện result
         uploadSection.classList.add("hidden");
@@ -132,15 +182,47 @@ uploadBtn.addEventListener("click", () => {
 // DOWNLOAD
 
 if (downloadBtn) {
-  downloadBtn.addEventListener("click", () => {
-    const code = codeInput.value;
+  const downloadError = document.getElementById("downloadError");
+
+  downloadBtn.addEventListener("click", async () => {
+    const code = codeInput.value.trim();
 
     if (!code) {
       alert("Please enter code");
       return;
     }
 
-    window.location.href = `/download?code=${code}`;
+    downloadError.classList.add("hidden");
+    downloadError.innerText = "";
+
+    try {
+      const res = await fetch(`/download?code=${code}`);
+
+      if (!res.ok) {
+        const message = await res.text();
+        downloadError.innerText = message || "Mã không hợp lệ hoặc file đã hết hạn.";
+        downloadError.classList.remove("hidden");
+        return;
+      }
+
+      const disposition = res.headers.get("Content-Disposition");
+      let filename = "download";
+      const match = disposition && disposition.match(/filename="?([^"]+)"?/);
+      if (match) filename = match[1];
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      downloadError.innerText = "Cannot reach server";
+      downloadError.classList.remove("hidden");
+    }
   });
 }
 
@@ -164,5 +246,6 @@ function startCountdown(totalSeconds) {
     }
   }, 1000);
 
+  return interval;
 }
 
